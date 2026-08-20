@@ -119,7 +119,7 @@ Popup clicks
 | Person | Role |
 |---|---|
 | **[@arccxp](https://github.com/arccxp)** | Reverse engineering — blob storage path analysis, SAS token extraction, PDF encryption key research |
-| **[@owls](https://github.com/owls)** | UI/UX design, page scraping logic, download pipeline, PDF compilation |
+| **[@owlsnet](https://github.com/owlsnet)** | UI/UX design, page scraping logic, download pipeline, PDF compilation |
 
 ---
 

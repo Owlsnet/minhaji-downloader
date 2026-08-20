@@ -129,4 +129,4 @@ This tool is intended for **personal, educational use only** — to access books
 
 ---
 
-Made with cold coffee and too many open dev tools
+Made with ai lol

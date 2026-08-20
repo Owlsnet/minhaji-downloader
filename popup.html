@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minhaji Downloader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #08060f;
+      --surface:   #110e1e;
+      --card:      #18132b;
+      --border:    rgba(147, 51, 234, 0.22);
+      --accent:    #9333ea;
+      --accent2:   #6d28d9;
+      --blue:      #3b82f6;
+      --green:     #10b981;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --text:      #f3e8ff;
+      --muted:     #a78bfa;
+      --faint:     rgba(167, 139, 250, 0.45);
+      --log-bg:    rgba(0, 0, 0, 0.45);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      width: 370px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 14px 16px 12px;
+      background: linear-gradient(135deg, rgba(147,51,234,0.18) 0%, rgba(59,130,246,0.08) 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(147,51,234,0.5);
+    }
+    .header-icon svg { display: block; }
+    .header-text { flex: 1; }
+    .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.6px; color: var(--text); }
+    .header-sub   { font-size: 10px; color: var(--faint); margin-top: 1px; letter-spacing: 0.3px; }
+    .badge {
+      font-size: 9px; font-weight: 600;
+      padding: 2px 7px; border-radius: 20px;
+      background: rgba(147,51,234,0.2);
+      border: 1px solid rgba(147,51,234,0.35);
+      color: var(--muted); letter-spacing: 0.5px;
+    }
+
+    .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    .mode-toggle {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 7px; border: none;
+      background: transparent;
+      color: var(--faint);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+      letter-spacing: 0.3px;
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(147,51,234,0.38);
+    }
+    .mode-btn svg { flex-shrink: 0; }
+
+    .input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .field { flex: 1; }
+    .label {
+      font-size: 10px; color: var(--muted);
+      margin-bottom: 5px; display: block;
+      font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input:focus {
+      border-color: rgba(147,51,234,0.6);
+      box-shadow: 0 0 0 3px rgba(147,51,234,0.12);
+    }
+    .input::placeholder { color: rgba(167,139,250,0.35); }
+
+    .hint {
+      font-size: 10px; color: var(--faint);
+      line-height: 1.5; padding: 8px 10px;
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.18);
+      border-radius: 7px;
+    }
+    .hint b { color: var(--muted); font-weight: 600; }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px; border: none;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 4px 18px rgba(147,51,234,0.38);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      white-space: nowrap; letter-spacing: 0.3px;
+    }
+    .btn:hover   { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(147,51,234,0.52); }
+    .btn:active  { transform: translateY(0); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .divider { height: 1px; background: var(--border); }
+
+    .progress-section { display: flex; flex-direction: column; gap: 7px; }
+    .progress-header  { display: flex; align-items: center; justify-content: space-between; }
+    .progress-label   { font-size: 11px; font-weight: 600; color: var(--muted); }
+    .progress-pct     { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .progress-track   { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--blue));
+      border-radius: 3px;
+      transition: width 0.25s ease;
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute; right: 0; top: 0; bottom: 0; width: 24px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+    .progress-fill.done { background: var(--green); }
+    .progress-fill.done::after { display: none; }
+    .progress-fill.err  { background: var(--red); }
+    .progress-fill.err::after  { display: none; }
+
+    .stats { display: flex; gap: 6px; }
+    .stat {
+      flex: 1; background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 10px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .stat-label { font-size: 9px; color: var(--faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.amber { color: var(--amber); }
+
+    .log-section { display: flex; flex-direction: column; gap: 6px; }
+    .log-header  { display: flex; align-items: center; justify-content: space-between; }
+    .log-label   { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .log-clear   {
+      font-size: 9px; color: var(--faint);
+      cursor: pointer; background: none; border: none; font-family: inherit;
+      padding: 2px 6px; border-radius: 4px;
+      transition: color 0.15s, background 0.15s; letter-spacing: 0.3px;
+    }
+    .log-clear:hover { color: var(--muted); background: rgba(167,139,250,0.1); }
+    .log-panel {
+      background: var(--log-bg);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px; padding: 8px 10px;
+      height: 130px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 2px;
+      scroll-behavior: smooth;
+    }
+    .log-panel::-webkit-scrollbar       { width: 4px; }
+    .log-panel::-webkit-scrollbar-track { background: transparent; }
+    .log-panel::-webkit-scrollbar-thumb { background: rgba(147,51,234,0.35); border-radius: 2px; }
+    .log-line {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; line-height: 1.55;
+      color: rgba(167,139,250,0.75);
+      word-break: break-all;
+      animation: fadeIn 0.18s ease;
+    }
+    .log-line.info  { color: rgba(167,139,250,0.75); }
+    .log-line.ok    { color: var(--green); }
+    .log-line.warn  { color: var(--amber); }
+    .log-line.error { color: var(--red); }
+    .log-line.dim   { color: rgba(167,139,250,0.38); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+    .status-pill {
+      display: none;
+      align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 8px;
+      font-size: 11px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .status-pill.visible { display: flex; }
+    .status-pill.running { background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.3); color: var(--muted); }
+    .status-pill.success { background: rgba(16,185,129,0.12);  border-color: rgba(16,185,129,0.3);  color: var(--green); }
+    .status-pill.error   { background: rgba(239,68,68,0.12);   border-color: rgba(239,68,68,0.3);   color: var(--red); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .dot.pulse { animation: dotPulse 1.5s infinite; }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.35; box-shadow: 0 0 3px currentColor; }
+      50%       { opacity: 1;    box-shadow: 0 0 9px currentColor; }
+    }
+
+    .footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 9px; color: rgba(167,139,250,0.35);
+      text-align: center; letter-spacing: 0.4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">MINHAJI DOWNLOADER</div>
+      <div class="header-sub">minhaji.moe.gov.ae · PDF Export</div>
+    </div>
+    <div class="badge">PDF</div>
+  </div>
+
+  <div class="body">
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeImages">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        Images → PDF
+      </button>
+      <button class="mode-btn" id="modeDirect">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <path d="M10 13l-2 2 2 2"/><path d="M14 13l2 2-2 2"/>
+        </svg>
+        Direct PDF
+      </button>
+    </div>
+
+    <div id="panelImages">
+      <div class="input-row">
+        <div class="field">
+          <label class="label" for="pageCount">Total Pages</label>
+          <input class="input" type="number" id="pageCount" placeholder="Auto-detect or enter..." min="1" />
+        </div>
+        <button class="btn" id="downloadBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download
+        </button>
+      </div>
+    </div>
+
+    <div id="panelDirect" style="display:none; flex-direction:column; gap:10px;">
+      <div class="hint">
+        <b>How to use:</b> Open any book in the viewer so at least one page loads, then hit Download. The encrypted PDF is located and decrypted automatically — no extra steps needed.
+      </div>
+      <button class="btn" id="downloadPdfBtn" style="width:100%;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+        </svg>
+        Download &amp; Decrypt PDF
+      </button>
+    </div>
+
+    <div class="status-pill" id="statusPill">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Idle</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-label" id="progressLabel">Ready</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label" id="labelA">Pages</span>
+        <span class="stat-value" id="statPages">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label" id="labelB">Done</span>
+        <span class="stat-value green" id="statDone">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label" id="labelC">ETA</span>
+        <span class="stat-value amber" id="statETA">—</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="log-section">
+      <div class="log-header">
+        <span class="log-label">Live Log</span>
+        <button class="log-clear" id="clearLogBtn">Clear</button>
+      </div>
+      <div class="log-panel" id="logPanel"></div>
+    </div>
+
+  </div>
+
+  <div class="footer">MINHAJI PDF DOWNLOADER &nbsp;·&nbsp; USE ON ACTIVE BOOK PAGE</div>
+
+  <script src="jspdf.umd.min.js"></script>
+  <script src="pdf-lib.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,26 +1,26 @@
-# 📚 Minhaji PDF Downloader
+# Minhaji PDF Downloader
 
 > A Chrome extension for downloading full, unlocked PDFs from the [Minhaji Digital Library](https://minhaji.moe.gov.ae) — UAE Ministry of Education's student reading platform.
 
 ---
 
-## ✨ Features
+## Features
 
 | Mode | What it does |
 |---|---|
 | **Images → PDF** | Scrapes individual page images from the viewer, downloads them at high concurrency (32 parallel), and compiles them into a clean PDF |
-| **Direct PDF** | Locates and fetches the encrypted source PDF file, decrypts it using the known key via PDF.js, renders each page at 2× resolution, and saves an unlocked copy |
+| **Direct PDF** | Locates and fetches the encrypted source PDF file, decrypts it using the known key via PDF.js, renders each page at 2x resolution, and saves an unlocked copy |
 
-- 🔍 Auto-detects book name, SAS token, and page count from the active tab
-- ⚡ 32-page concurrent download with real-time ETA
-- 🔓 Full AES/RC4 PDF decryption via PDF.js (not a bypass — uses the actual key)
-- 📊 Live log panel with timestamped entries, progress bar, and status pill in the popup
-- 🧠 Tries multiple Azure Blob Storage path layouts automatically (direct, `/encrypted/`, `/files/`, etc.)
-- 🛠️ Self-healing: injects PDF.js and jsPDF from CDN if not already on the page
+- Auto-detects book name, SAS token, and page count from the active tab
+- 32-page concurrent download with real-time ETA
+- Full AES/RC4 PDF decryption via PDF.js (not a bypass — uses the actual key)
+- Live log panel with timestamped entries, progress bar, and status pill in the popup
+- Tries multiple Azure Blob Storage path layouts automatically (direct, `/encrypted/`, `/files/`, etc.)
+- Self-healing: injects PDF.js and jsPDF from CDN if not already on the page
 
 ---
 
-## 🗂️ File Structure
+## File Structure
 
 ```
 minhaji-downloader/
@@ -39,7 +39,7 @@ minhaji-downloader/
 
 ---
 
-## 🚀 Installation
+## Installation
 
 1. Clone or download this repository
 2. Open Chrome and go to `chrome://extensions/`
@@ -49,7 +49,7 @@ minhaji-downloader/
 
 ---
 
-## 🖥️ How to Use
+## How to Use
 
 ### Mode 1 — Images → PDF
 
@@ -75,7 +75,7 @@ Best for books served as encrypted PDFs from Azure Blob Storage.
 
 ---
 
-## ⚙️ Technical Deep-Dive
+## Technical Deep-Dive
 
 ### How scraping works
 
@@ -100,7 +100,7 @@ Popup clicks
       → Loads PDF.js from CDN if not present
       → Creates inline blob worker URL (bypasses cross-origin worker restrictions)
       → pdfjsLib.getDocument({ data, password }) — real AES/RC4 decryption
-      → Renders each page to canvas at 2× DPI
+      → Renders each page to canvas at 2x DPI
       → Compiles via jsPDF
       → pdf.save() triggers browser download
   → Returns { ok, numPages, urlIndex } to popup for logging
@@ -114,7 +114,7 @@ Popup clicks
 
 ---
 
-## 🙏 Credits
+## Credits
 
 | Person | Role |
 |---|---|
@@ -123,12 +123,10 @@ Popup clicks
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 This tool is intended for **personal, educational use only** — to access books you are already authorized to read through the Minhaji platform. Do not redistribute downloaded content. The authors take no responsibility for misuse.
 
 ---
 
-<p align="center">
-  Made with ☕ and too many open dev tools
-</p>
+Made with cold coffee and too many open dev tools

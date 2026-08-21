@@ -11,71 +11,93 @@ const statusText  = document.getElementById('statusText');
 const downloadBtn    = document.getElementById('downloadBtn');
 const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 const clearLogBtn    = document.getElementById('clearLogBtn');
+const resetBtn       = document.getElementById('resetBtn');
 const modeImages  = document.getElementById('modeImages');
 const modeDirect  = document.getElementById('modeDirect');
 const panelImages = document.getElementById('panelImages');
 const panelDirect = document.getElementById('panelDirect');
 
-let activeMode = 'images';
+let activeMode = localStorage.getItem('minhaji_mode') || 'images';
 
-modeImages.addEventListener('click', () => {
-  activeMode = 'images';
-  modeImages.classList.add('active');
-  modeDirect.classList.remove('active');
-  panelImages.style.display = '';
-  panelDirect.style.display = 'none';
-  document.getElementById('labelA').textContent = 'Pages';
-  document.getElementById('labelB').textContent = 'Done';
-  document.getElementById('labelC').textContent = 'ETA';
-  resetUI();
-  logPanel.innerHTML = '';
+function setMode(mode, clearLogs = true) {
+  activeMode = mode;
+  localStorage.setItem('minhaji_mode', mode);
+  if (mode === 'images') {
+    modeImages.classList.add('active');
+    modeDirect.classList.remove('active');
+    panelImages.style.display = '';
+    panelDirect.style.display = 'none';
+    document.getElementById('labelA').textContent = 'Pages';
+    document.getElementById('labelB').textContent = 'Done';
+    document.getElementById('labelC').textContent = 'ETA';
+  } else {
+    modeDirect.classList.add('active');
+    modeImages.classList.remove('active');
+    panelDirect.style.display = 'flex';
+    panelImages.style.display = 'none';
+    document.getElementById('labelA').textContent = 'Size';
+    document.getElementById('labelB').textContent = 'Status';
+    document.getElementById('labelC').textContent = 'Time';
+  }
+  if (clearLogs) {
+    logPanel.innerHTML = '';
+    chrome.runtime.sendMessage({ type: 'CLEAR_LOGS' });
+  }
+}
+
+modeImages.addEventListener('click', () => setMode('images', true));
+modeDirect.addEventListener('click', () => setMode('direct', true));
+
+setMode(activeMode, false);
+
+let port = chrome.runtime.connect({ name: 'popup' });
+port.onMessage.addListener(msg => {
+  if (msg.type === 'SYNC') syncState(msg.state);
+  if (msg.type === 'LOG') pushLogUI(msg.item);
 });
 
-modeDirect.addEventListener('click', () => {
-  activeMode = 'direct';
-  modeDirect.classList.add('active');
-  modeImages.classList.remove('active');
-  panelDirect.style.display = 'flex';
-  panelImages.style.display = 'none';
-  document.getElementById('labelA').textContent = 'Size';
-  document.getElementById('labelB').textContent = 'Status';
-  document.getElementById('labelC').textContent = 'Time';
-  resetUI();
+function syncState(s) {
+  downloadBtn.disabled = s.isActive;
+  downloadPdfBtn.disabled = s.isActive;
+  progressFill.style.width = `${Math.max(0, Math.min(100, s.progressPct))}%`;
+  progressPct.textContent = `${Math.max(0, Math.min(100, s.progressPct))}%`;
+  progressLbl.textContent = s.progressLabel;
+  statPages.textContent = s.statPages;
+  statDone.textContent = s.statDone;
+  statETA.textContent = s.statETA;
+  statusPill.className = s.statusState ? `status-pill visible ${s.statusState}` : 'status-pill';
+  statusText.textContent = s.statusText;
+  statusDot.className = s.statusState === 'running' ? 'dot pulse' : 'dot';
   logPanel.innerHTML = '';
-});
+  s.logs.forEach(pushLogUI);
+}
 
-function pushLog(text, type = 'info') {
+function pushLogUI(item) {
   const line = document.createElement('div');
-  line.className = `log-line ${type}`;
-  const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
-  line.textContent = `[${ts}] ${text}`;
+  line.className = `log-line ${item.type}`;
+  line.textContent = `[${item.ts}] ${item.text}`;
   logPanel.appendChild(line);
   logPanel.scrollTop = logPanel.scrollHeight;
 }
 
-function setProgress(pct, label) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  progressFill.style.width = `${clamped}%`;
-  progressPct.textContent  = `${clamped}%`;
-  if (label) progressLbl.textContent = label;
-}
-
-function setStatus(state, text) {
-  statusPill.className = `status-pill visible ${state}`;
-  statusText.textContent = text;
-  statusDot.className = state === 'running' ? 'dot pulse' : 'dot';
-}
-
 function resetUI() {
-  progressFill.className = 'progress-fill';
-  setProgress(0, 'Ready');
-  statPages.textContent = '—';
-  statDone.textContent  = '0';
-  statETA.textContent   = '—';
-  statusPill.className  = 'status-pill';
+  /* handled by state sync now */
 }
 
-clearLogBtn.addEventListener('click', () => { logPanel.innerHTML = ''; });
+clearLogBtn.addEventListener('click', () => { 
+  const lines = logPanel.querySelectorAll('.log-line');
+  lines.forEach(line => {
+    line.style.transition = 'all 0.18s ease';
+    line.style.opacity = '0';
+    line.style.transform = 'translateY(2px)';
+  });
+  setTimeout(() => {
+    logPanel.innerHTML = ''; 
+    chrome.runtime.sendMessage({ type: 'CLEAR_LOGS' }); 
+  }, 180);
+});
+
+resetBtn.addEventListener('click', () => { chrome.runtime.sendMessage({ type: 'RESET_STATE' }); });
 
 function scrapePageAssetInfo() {
   const resourceEntries = performance.getEntriesByType('resource').map(e => e.name);
@@ -96,11 +118,14 @@ function scrapePageAssetInfo() {
     }
   }
 
-  allBlobUrls = [...new Set(allBlobUrls)];
+  allBlobUrls = [...new Set(allBlobUrls)].reverse(); // Get latest first
 
   let foundUrl = allBlobUrls.find(u => /\.(webp|png|jpg|jpeg)(\?|$)/i.test(u) && /(page|slide|img|book|doc)/i.test(u))
               || allBlobUrls.find(u => /\.(webp|png|jpg|jpeg)(\?|$)/i.test(u))
               || allBlobUrls[0];
+              
+  // Now that we have the info, optionally clear timings to prevent future collisions, though reversing mostly solves it.
+  performance.clearResourceTimings();
 
   let freshSasToken = null;
   let bookMeta = null;
@@ -190,392 +215,36 @@ function scrapePageAssetInfo() {
 downloadPdfBtn.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
-
-  resetUI();
-  logPanel.innerHTML = '';
-  downloadPdfBtn.disabled = true;
-  setStatus('running', 'Locating PDF…');
-  pushLog('Extracting active session token…', 'dim');
-
-  try {
-    // Step 1: scrape page for book info and SAS tokens
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: scrapePageAssetInfo,
-      world: 'MAIN'
-    });
-
-    const info = results?.[0]?.result;
-    if (!info) {
-      pushLog('Failed to inspect page state. Ensure book page is active.', 'error');
-      setStatus('error', 'Page Error');
-      downloadPdfBtn.disabled = false;
-      return;
-    }
-
-    pushLog(`Book: "${info.bookName}"`, 'info');
-    if (info.relativePath) pushLog(`Path: ${info.relativePath}/${info.bookName}`, 'dim');
-    pushLog(`Tokens available: ${info.sasTokens.length}`, 'dim');
-
-    // Step 2: build candidate URLs (multiple path layouts)
-    const baseUrl = 'https://aze7greadersa01.blob.core.windows.net/books';
-    const candidateUrls = [];
-
-    const pathVariants = [
-      (base, rel, name, sas) => `${base}/${rel}/${name}.pdf${sas}`,
-      (base, rel, name, sas) => `${base}/${rel}/${name}/encrypted/${name}.pdf${sas}`,
-      (base, rel, name, sas) => `${base}/${rel}/${name}/files/${name}.pdf${sas}`,
-      (base, rel, name, sas) => `${base}/${rel}/${name}/${name}.pdf${sas}`,
-    ];
-
-    if (info.relativePath && info.bookName) {
-      for (const sas of info.sasTokens) {
-        for (const variant of pathVariants) {
-          const url = variant(baseUrl, info.relativePath, info.bookName, sas);
-          if (!candidateUrls.includes(url)) candidateUrls.push(url);
-        }
-      }
-    }
-
-    if (info.foundUrl) {
-      try {
-        const parsed  = new URL(info.foundUrl);
-        const folderIdx = parsed.pathname.search(/\/(pages|slides|slide|img|images)\//i);
-        if (folderIdx !== -1) {
-          const base = parsed.pathname.substring(0, folderIdx);
-          for (const sas of info.sasTokens) {
-            for (const sub of ['', '/encrypted', '/files']) {
-              const url = `${parsed.origin}${base}${sub}/${info.bookName}.pdf${sas}`;
-              if (!candidateUrls.includes(url)) candidateUrls.push(url);
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (candidateUrls.length === 0) {
-      pushLog('Could not construct PDF URL path.', 'error');
-      setStatus('error', 'URL Error');
-      downloadPdfBtn.disabled = false;
-      return;
-    }
-
-    pushLog(`Target: ${info.bookName}.pdf`, 'info');
-    setStatus('running', 'Running on page…');
-    setProgress(10, 'Injecting pipeline…');
-    pushLog('Handing off to page — fetch → decrypt → render → save…', 'dim');
-
-    // Step 3: run the entire pipeline inside the page's MAIN world
-    const PDF_PASSWORD = 'Z7#pLw9xT@5uFk1!qRdM&nA2sV$3jYeG';
-    const fileName     = `${info.bookName}_unlocked.pdf`;
-
-    const pageResult = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: async (urls, password, outFileName) => {
-
-        // ── helpers ──────────────────────────────────────────────────────────
-        const loadScript = (src) => new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = src; s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        });
-
-        // ── 1. ensure PDF.js is available ────────────────────────────────────
-        const PDFJS_VERSION = '3.11.174';
-        const PDFJS_CDN     = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
-
-        let pdfjs = window.pdfjsLib || window.PDFJS || null;
-
-        if (!pdfjs) {
-          await loadScript(`${PDFJS_CDN}/pdf.min.js`);
-          pdfjs = window.pdfjsLib || window.PDFJS;
-          if (!pdfjs) return { ok: false, error: 'Failed to load PDF.js from CDN' };
-        }
-
-        // Use an inline blob worker — avoids cross-origin worker restrictions
-        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-          const workerResp = await fetch(`${PDFJS_CDN}/pdf.worker.min.js`);
-          const workerText = await workerResp.text();
-          const workerBlob = new Blob([workerText], { type: 'application/javascript' });
-          pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
-        }
-
-        // ── 2. ensure jsPDF is available ─────────────────────────────────────
-        if (!window.jspdf) {
-          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-          if (!window.jspdf) return { ok: false, error: 'Failed to load jsPDF from CDN' };
-        }
-
-        // ── 3. find a working URL ────────────────────────────────────────────
-        let bytes = null;
-        let foundAt = -1;
-        for (let i = 0; i < urls.length; i++) {
-          try {
-            const r = await fetch(urls[i]);
-            if (r.ok) {
-              bytes   = new Uint8Array(await r.arrayBuffer());
-              foundAt = i;
-              break;
-            }
-          } catch (_) {}
-        }
-
-        if (!bytes) return { ok: false, error: 'All candidate URLs returned 404/403' };
-
-        // ── 4. decrypt with PDF.js using the known password ──────────────────
-        let pdfDoc;
-        try {
-          pdfDoc = await pdfjs.getDocument({ data: bytes, password }).promise;
-        } catch (e) {
-          return { ok: false, error: `PDF.js decryption failed: ${e.message}` };
-        }
-
-        const numPages = pdfDoc.numPages;
-
-        // ── 5. render each page → jsPDF ───────────────────────────────────────
-        const { jsPDF } = window.jspdf;
-        const pdf       = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4', compress: true });
-        const pdfW      = pdf.internal.pageSize.getWidth();
-        const pdfH      = pdf.internal.pageSize.getHeight();
-        const SCALE     = 2.0;
-
-        for (let p = 1; p <= numPages; p++) {
-          const page   = await pdfDoc.getPage(p);
-          const vp     = page.getViewport({ scale: SCALE });
-          const canvas = document.createElement('canvas');
-          canvas.width = vp.width; canvas.height = vp.height;
-          const ctx    = canvas.getContext('2d', { alpha: false });
-          await page.render({ canvasContext: ctx, viewport: vp }).promise;
-
-          const img   = canvas.toDataURL('image/jpeg', 0.92);
-          const ratio = Math.min(pdfW / vp.width, pdfH / vp.height);
-          const w = vp.width * ratio, h = vp.height * ratio;
-
-          if (p > 1) pdf.addPage();
-          pdf.addImage(img, 'JPEG', (pdfW - w) / 2, (pdfH - h) / 2, w, h, undefined, 'FAST');
-        }
-
-        // ── 6. save ───────────────────────────────────────────────────────────
-        pdf.save(outFileName);
-        return { ok: true, numPages, urlIndex: foundAt };
-      },
-      args: [candidateUrls, PDF_PASSWORD, fileName],
-      world: 'MAIN'
-    });
-
-    const outcome = pageResult?.[0]?.result;
-
-    if (!outcome || !outcome.ok) {
-      throw new Error(outcome?.error || 'Page-side pipeline failed with no error message.');
-    }
-
-    setProgress(100, 'Complete');
-    setStatus('success', 'Complete!');
-    statDone.textContent = 'Done';
-    pushLog(`Decrypted ${outcome.numPages} pages using URL #${outcome.urlIndex + 1}`, 'ok');
-    pushLog(`File "${fileName}" saved successfully.`, 'ok');
-
-  } catch (err) {
-    pushLog(`Error: ${err.message}`, 'error');
-    setStatus('error', 'Failed');
-    setProgress(0, 'Failed');
-  } finally {
-    downloadPdfBtn.disabled = false;
-  }
+  const results = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scrapePageAssetInfo, world: 'MAIN' });
+  const info = results?.[0]?.result;
+  if (!info) return alert('Failed to inspect page state. Ensure book page is active.');
+  chrome.runtime.sendMessage({ type: 'START_DIRECT', tabId: tab.id, info });
 });
-
-
-
 
 downloadBtn.addEventListener('click', async () => {
   const pageCountInput = document.getElementById('pageCount').value;
   const userPages = pageCountInput ? parseInt(pageCountInput, 10) : null;
-
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
 
-  resetUI();
-  logPanel.innerHTML = '';
-  downloadBtn.disabled = true;
-  setStatus('running', 'Initializing…');
-  pushLog('Scanning page environment…', 'dim');
+  const results = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scrapePageAssetInfo, world: 'MAIN' });
+  const info = results?.[0]?.result;
+  if (!info || !info.foundUrl) return alert('No book page asset detected. View a page first.');
 
-  try {
-    const results = await chrome.scripting.executeScript({
+  const parsed = new URL(info.foundUrl);
+  const sampleNumStr = parsed.pathname.match(/(.*?)(\d+)(\.[a-zA-Z0-9]+)$/)?.[2] || '100';
+  const defaultGuess = info.detectedTotal || (parseInt(sampleNumStr, 10) > 1 ? sampleNumStr : '100');
+  let totalPages = userPages || info.detectedTotal;
+  
+  if (!totalPages) {
+    const pRes = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: scrapePageAssetInfo,
-      world: 'MAIN'
+      func: (bName, guess) => prompt(`[Minhaji Downloader] Detected book: "${bName}"\nEnter total page count:`, guess),
+      args: [info.bookName, defaultGuess]
     });
-
-    const info = results?.[0]?.result;
-    if (!info || !info.foundUrl) {
-      pushLog('No book page asset detected. View a page first.', 'error');
-      setStatus('error', 'Asset Not Found');
-      downloadBtn.disabled = false;
-      return;
-    }
-
-    const parsed = new URL(info.foundUrl);
-    const pathname = parsed.pathname;
-    const sasToken = info.freshSasToken ? (info.freshSasToken.startsWith('?') ? info.freshSasToken : '?' + info.freshSasToken) : parsed.search;
-
-    const extMatch = pathname.match(/\.([a-zA-Z0-9]+)(\?|$)/);
-    const ext = extMatch ? extMatch[1] : 'webp';
-
-    const pageNumMatch = pathname.match(/(.*?)(\d+)(\.[a-zA-Z0-9]+)$/);
-    if (!pageNumMatch) {
-      pushLog('Could not parse page numbering format from URL path.', 'error');
-      setStatus('error', 'Parse Error');
-      downloadBtn.disabled = false;
-      return;
-    }
-
-    const sampleNumStr = pageNumMatch[2];
-    const paddingSize = sampleNumStr.length;
-    const basePath = pageNumMatch[1];
-    const baseUrl = `${parsed.origin}${basePath}`;
-
-    const defaultGuess = info.detectedTotal || (parseInt(sampleNumStr, 10) > 1 ? sampleNumStr : '100');
-    const totalPages = userPages || info.detectedTotal || parseInt(
-      prompt(`[Minhaji Downloader] Detected book: "${info.bookName}"\nEnter total page count:`, defaultGuess), 10
-    );
-
-    if (!totalPages || isNaN(totalPages)) {
-      pushLog('Operation cancelled.', 'warn');
-      setStatus('error', 'Cancelled');
-      downloadBtn.disabled = false;
-      return;
-    }
-
-    statPages.textContent = totalPages;
-    pushLog(`Book: "${info.bookName}" — ${totalPages} pages`, 'info');
-    pushLog('Beginning page downloads…', 'dim');
-    setStatus('running', 'Downloading pages…');
-
-    const pageMap = new Map();
-    const concurrency = 32;
-    let completedCount = 0;
-    const startTime = Date.now();
-
-    const fetchWithTimeout = async (url, timeout = 8000) => {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeout);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    };
-
-    for (let i = 1; i <= totalPages; i += concurrency) {
-      const chunkPromises = [];
-      for (let j = i; j < i + concurrency && j <= totalPages; j++) {
-        const paddedNum = String(j).padStart(paddingSize, '0');
-        const targetUrl = `${baseUrl}${paddedNum}.${ext}${sasToken}`;
-
-        chunkPromises.push(
-          fetchWithTimeout(targetUrl).then(async res => {
-            if (res.ok) {
-              const blob = await res.blob();
-              pageMap.set(j, blob);
-              completedCount++;
-
-              const elapsed = (Date.now() - startTime) / 1000;
-              const rate = completedCount / elapsed;
-              const remaining = isNaN(rate) || rate === 0 ? 0 : Math.round((totalPages - completedCount) / rate);
-              const dlPct = Math.round((completedCount / totalPages) * 50);
-
-              setProgress(dlPct, `Downloading ${completedCount}/${totalPages}`);
-              statDone.textContent = completedCount;
-              statETA.textContent = `${remaining}s`;
-              pushLog(`Downloaded page ${completedCount}/${totalPages} (ETA: ${remaining}s)`, 'info');
-            }
-          }).catch(() => {
-            pushLog(`Page ${j} failed — skipping`, 'warn');
-          })
-        );
-      }
-      await Promise.all(chunkPromises);
-    }
-
-    pushLog('All downloads done — compiling PDF…', 'info');
-    setStatus('running', 'Compiling PDF…');
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4', compress: true });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const compileStart = Date.now();
-    const batchSize = 128;
-
-    for (let i = 1; i <= totalPages; i += batchSize) {
-      const batchPromises = [];
-      const limit = Math.min(i + batchSize, totalPages + 1);
-
-      for (let j = i; j < limit; j++) {
-        const blob = pageMap.get(j);
-        if (!blob) continue;
-
-        batchPromises.push((async (pageIndex, pageBlob) => {
-          const bitmap = await createImageBitmap(pageBlob);
-          const bWidth = bitmap.width;
-          const bHeight = bitmap.height;
-
-          const canvas = document.createElement('canvas');
-          canvas.width = bWidth;
-          canvas.height = bHeight;
-          const ctx = canvas.getContext('2d', { alpha: false });
-          ctx.drawImage(bitmap, 0, 0);
-          const dataUri = canvas.toDataURL('image/jpeg', 0.82);
-          bitmap.close();
-
-          const ratio = Math.min(pageWidth / bWidth, pageHeight / bHeight);
-          const w = bWidth * ratio;
-          const h = bHeight * ratio;
-          return {
-            index: pageIndex,
-            data: dataUri,
-            width: w, height: h,
-            x: (pageWidth - w) / 2,
-            y: (pageHeight - h) / 2
-          };
-        })(j, blob));
-      }
-
-      const results = await Promise.all(batchPromises);
-      results.sort((a, b) => a.index - b.index);
-
-      for (const item of results) {
-        if (item.index > 1) pdf.addPage();
-        pdf.addImage(item.data, 'JPEG', item.x, item.y, item.width, item.height, undefined, 'FAST');
-      }
-
-      const compiledSoFar = Math.min(i + batchSize - 1, totalPages);
-      const compileElapsed = (Date.now() - compileStart) / 1000;
-      const compileRate = compiledSoFar / compileElapsed;
-      const compileRemaining = isNaN(compileRate) || compileRate === 0 ? 0 : Math.round((totalPages - compiledSoFar) / compileRate);
-      const compilePct = Math.round(50 + (compiledSoFar / totalPages) * 50);
-
-      setProgress(compilePct, `Compiling ${compiledSoFar}/${totalPages}`);
-      pushLog(`Compiled ${compiledSoFar}/${totalPages} pages`, 'info');
-    }
-
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    const fileName = `${info.bookName}.pdf`;
-    pdf.save(fileName);
-
-    setProgress(100, 'Complete');
-    setStatus('success', 'Complete!');
-    pushLog(`"${fileName}" saved in ${totalTime}s`, 'ok');
-
-  } catch (err) {
-    pushLog(`Error: ${err.message}`, 'error');
-    setStatus('error', 'Failed');
-  } finally {
-    downloadBtn.disabled = false;
+    totalPages = parseInt(pRes?.[0]?.result, 10);
   }
+  
+  if (!totalPages || isNaN(totalPages)) return;
+  chrome.runtime.sendMessage({ type: 'START_IMAGES', tabId: tab.id, info, totalPages });
 });

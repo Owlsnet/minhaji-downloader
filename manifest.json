@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Minhaji PDF Downloader",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Download full PDFs from minhaji.moe.gov.ae library",
   "permissions": ["activeTab", "scripting", "downloads"],
   "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
@@ -15,8 +17,7 @@
       "js": ["injector.js"],
       "run_at": "document_start",
       "all_frames": true,
-      "world": "MAIN"
+      "world": "ISOLATED"
     }
-  ],
-  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  ]
 }

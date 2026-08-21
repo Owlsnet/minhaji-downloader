@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>Minhaji Downloader</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +24,7 @@
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       width: 370px;
@@ -77,7 +76,7 @@
       border-radius: 7px; border: none;
       background: transparent;
       color: var(--faint);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 11px; font-weight: 600;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -105,7 +104,7 @@
       border-radius: 8px;
       padding: 9px 12px;
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 13px; outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
@@ -129,7 +128,7 @@
       border-radius: 8px; border: none;
       background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
       color: #fff;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 12px; font-weight: 700;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -140,13 +139,18 @@
     .btn:hover   { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(147,51,234,0.52); }
     .btn:active  { transform: translateY(0); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn.danger {
+      background: linear-gradient(135deg, var(--red) 0%, #b91c1c 100%);
+      box-shadow: 0 4px 18px rgba(239,68,68,0.38);
+    }
+    .btn.danger:hover { box-shadow: 0 6px 24px rgba(239,68,68,0.52); }
 
     .divider { height: 1px; background: var(--border); }
 
     .progress-section { display: flex; flex-direction: column; gap: 7px; }
     .progress-header  { display: flex; align-items: center; justify-content: space-between; }
     .progress-label   { font-size: 11px; font-weight: 600; color: var(--muted); }
-    .progress-pct     { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .progress-pct     { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .progress-track   { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
     .progress-fill {
       height: 100%; width: 0%;
@@ -175,7 +179,7 @@
       display: flex; flex-direction: column; gap: 2px;
     }
     .stat-label { font-size: 9px; color: var(--faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-value { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .stat-value { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .stat-value.green { color: var(--green); }
     .stat-value.amber { color: var(--amber); }
 
@@ -201,7 +205,7 @@
     .log-panel::-webkit-scrollbar-track { background: transparent; }
     .log-panel::-webkit-scrollbar-thumb { background: rgba(147,51,234,0.35); border-radius: 2px; }
     .log-line {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 10px; line-height: 1.55;
       color: rgba(167,139,250,0.75);
       word-break: break-all;
@@ -309,9 +313,12 @@
       </button>
     </div>
 
-    <div class="status-pill" id="statusPill">
-      <span class="dot" id="statusDot"></span>
-      <span id="statusText">Idle</span>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="status-pill" id="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Idle</span>
+      </div>
+      <button class="btn danger" id="resetBtn" style="padding: 6px 12px; font-size: 10px;">Force Reset</button>
     </div>
 
     <div class="divider"></div>

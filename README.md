@@ -30,10 +30,6 @@ minhaji-downloader/
 ├── injector.js          # Content script stub (document_start)
 ├── jspdf.umd.min.js     # Bundled jsPDF (used by Images → PDF mode)
 ├── pdf-lib.min.js       # Bundled pdf-lib (fallback DRM strip)
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
 └── README.md
 ```
 

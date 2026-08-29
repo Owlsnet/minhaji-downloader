@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if(msg.evt === 'status') updateState({ statusState: msg.state, statusText: msg.text });
     if(msg.evt === 'done' || msg.evt === 'error') updateState({ isActive: false });
   }
-  if(msg.type === 'START_DIRECT') startDirect(msg.tabId, msg.info);
+  if(msg.type === 'START_DIRECT') startDirect(msg.tabId, msg.info, msg.downloadName);
   if(msg.type === 'START_IMAGES') startImages(msg.tabId, msg.info, msg.totalPages);
   if(msg.type === 'CLEAR_LOGS') { state.logs = []; updateState({ logs: [] }); }
   if(msg.type === 'RESET_STATE') {
@@ -55,7 +55,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-function startDirect(tabId, info) {
+function startDirect(tabId, info, downloadName) {
   state.lastTabId = tabId;
   updateState({ isActive: true, progressPct: 10, progressLabel: 'Injecting pipeline...', statPages: '—', statDone: 0, statETA: '—', statusState: 'running', statusText: 'Locating PDF…' });
   pushLog('Starting Direct PDF pipeline in background...', 'dim');
@@ -89,15 +89,17 @@ function startDirect(tabId, info) {
       }
     } catch (_) {}
   }
+  if (info.pdfUrl) candidateUrls.unshift(info.pdfUrl);   // exact pre-built URL wins first
   const uniqueUrls = [...new Set(candidateUrls)];
   if (uniqueUrls.length === 0) {
     pushLog('Could not construct PDF URL path.', 'error');
     updateState({ statusState: 'error', statusText: 'URL Error', isActive: false });
     return;
   }
+  const outFileName = downloadName || `${info.bookName}_unlocked.pdf`;
   chrome.scripting.executeScript({
     target: { tabId }, world: 'MAIN',
-    args: [uniqueUrls, 'Z7#pLw9xT@5uFk1!qRdM&nA2sV$3jYeG', `${info.bookName}_unlocked.pdf`],
+    args: [uniqueUrls, 'Z7#pLw9xT@5uFk1!qRdM&nA2sV$3jYeG', outFileName],
     func: async (urls, password, outFileName) => {
       let aborted = false;
       const abortHandler = (e) => { if (e.data && e.data.type === 'ABORT_DOWNLOAD') aborted = true; };

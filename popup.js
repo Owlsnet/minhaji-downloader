@@ -14,39 +14,38 @@ const clearLogBtn    = document.getElementById('clearLogBtn');
 const resetBtn       = document.getElementById('resetBtn');
 const modeImages  = document.getElementById('modeImages');
 const modeDirect  = document.getElementById('modeDirect');
+const modeBrowse  = document.getElementById('modeBrowse');
 const panelImages = document.getElementById('panelImages');
 const panelDirect = document.getElementById('panelDirect');
+const panelBrowse = document.getElementById('panelBrowse');
 
 let activeMode = localStorage.getItem('minhaji_mode') || 'images';
 
 function setMode(mode, clearLogs = true) {
   activeMode = mode;
   localStorage.setItem('minhaji_mode', mode);
-  if (mode === 'images') {
-    modeImages.classList.add('active');
-    modeDirect.classList.remove('active');
-    panelImages.style.display = '';
-    panelDirect.style.display = 'none';
-    document.getElementById('labelA').textContent = 'Pages';
-    document.getElementById('labelB').textContent = 'Done';
-    document.getElementById('labelC').textContent = 'ETA';
-  } else {
-    modeDirect.classList.add('active');
-    modeImages.classList.remove('active');
-    panelDirect.style.display = 'flex';
-    panelImages.style.display = 'none';
-    document.getElementById('labelA').textContent = 'Size';
-    document.getElementById('labelB').textContent = 'Status';
-    document.getElementById('labelC').textContent = 'Time';
-  }
+  modeImages.classList.toggle('active', mode === 'images');
+  modeDirect.classList.toggle('active', mode === 'direct');
+  modeBrowse.classList.toggle('active', mode === 'browse');
+  panelImages.style.display = mode === 'images' ? '' : 'none';
+  panelDirect.style.display = mode === 'direct' ? 'flex' : 'none';
+  panelBrowse.style.display = mode === 'browse' ? 'flex' : 'none';
+  const labels = mode === 'images' ? ['Pages', 'Done', 'ETA']
+               : mode === 'direct' ? ['Size', 'Status', 'Time']
+               : ['Books', 'Done', 'ETA'];
+  document.getElementById('labelA').textContent = labels[0];
+  document.getElementById('labelB').textContent = labels[1];
+  document.getElementById('labelC').textContent = labels[2];
   if (clearLogs) {
     logPanel.innerHTML = '';
     chrome.runtime.sendMessage({ type: 'CLEAR_LOGS' });
   }
+  if (mode === 'browse') initBrowse();
 }
 
 modeImages.addEventListener('click', () => setMode('images', true));
 modeDirect.addEventListener('click', () => setMode('direct', true));
+modeBrowse.addEventListener('click', () => setMode('browse', true));
 
 setMode(activeMode, false);
 

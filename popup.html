@@ -236,6 +236,38 @@
       50%       { opacity: 1;    box-shadow: 0 0 9px currentColor; }
     }
 
+    .book-grid {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 236px; overflow-y: auto;
+      background: var(--log-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px;
+    }
+    .book-grid::-webkit-scrollbar       { width: 4px; }
+    .book-grid::-webkit-scrollbar-track { background: transparent; }
+    .book-grid::-webkit-scrollbar-thumb { background: rgba(147,51,234,0.35); border-radius: 2px; }
+    .book-card {
+      display: flex; gap: 8px; align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 7px; padding: 6px 8px;
+      animation: fadeIn 0.18s ease;
+    }
+    .book-cover {
+      width: 38px; height: 52px; object-fit: cover; object-position: top;
+      border-radius: 4px; background: #000;
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .book-info { flex: 1; min-width: 0; }
+    .book-title {
+      font-size: 11px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .book-meta { font-size: 9px; color: var(--faint); margin-top: 2px; letter-spacing: 0.2px; }
+    .book-dl { padding: 6px 10px; font-size: 10px; flex-shrink: 0; }
+    .book-empty { font-size: 10px; color: var(--faint); text-align: center; padding: 16px 10px; line-height: 1.5; }
+    .book-empty b { color: var(--muted); }
+
     .footer {
       padding: 8px 16px;
       border-top: 1px solid var(--border);
@@ -279,6 +311,13 @@
         </svg>
         Direct PDF
       </button>
+      <button class="mode-btn" id="modeBrowse">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <path d="M9 22V12h6v10"/>
+        </svg>
+        Browse
+      </button>
     </div>
 
     <div id="panelImages">
@@ -311,6 +350,47 @@
         </svg>
         Download &amp; Decrypt PDF
       </button>
+    </div>
+
+    <div id="panelBrowse" style="display:none; flex-direction:column; gap:10px;">
+      <div class="hint" id="browseAuth">
+        <b>Browse Library:</b> uses your logged-in <b>minhaji.moe.gov.ae</b> session (any tab) to query the full catalog — KG1 to Grade 12, all streams, and Teacher's Guides. No viewer tab needed.
+      </div>
+      <div class="input-row">
+        <div class="field">
+          <label class="label" for="gradeSelect">Grade</label>
+          <select class="input" id="gradeSelect"><option value="">All grades</option></select>
+        </div>
+        <div class="field">
+          <label class="label" for="streamSelect">Stream</label>
+          <select class="input" id="streamSelect"><option value="">All streams</option></select>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="field">
+          <label class="label" for="subjectSelect">Subject</label>
+          <select class="input" id="subjectSelect"><option value="">All subjects</option></select>
+        </div>
+        <div class="field">
+          <label class="label" for="typeSelect">Book Type</label>
+          <select class="input" id="typeSelect">
+            <option value="student">Student Book</option>
+            <option value="teacher">Teacher's Guide</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-row">
+        <button class="btn" id="loadBooksBtn" style="flex:3; justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Load Books
+        </button>
+        <button class="btn danger" id="refreshCatBtn" style="flex:1; padding:10px 6px; font-size:10px;">Refresh</button>
+      </div>
+      <div class="book-grid" id="bookGrid">
+        <div class="book-empty">Pick a grade and press <b>Load Books</b>.</div>
+      </div>
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -364,6 +444,7 @@
 
   <script src="jspdf.umd.min.js"></script>
   <script src="pdf-lib.min.js"></script>
+  <script src="browse.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

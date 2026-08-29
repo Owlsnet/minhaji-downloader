@@ -10,6 +10,7 @@
 |---|---|
 | **Images → PDF** | Scrapes individual page images from the viewer, downloads them at high concurrency (32 parallel), and compiles them into a clean PDF |
 | **Direct PDF** | Locates and fetches the encrypted source PDF file, decrypts it using the known key via PDF.js, renders each page at 2x resolution, and saves an unlocked copy |
+| **Browse Library** | Queries the Minhaji catalog API directly (no viewer needed) — filter by grade (KG1–G12), stream (ASP / ADV / GEN), and subject; switch Book Type to **Teacher's Guide** to download teacher editions |
 
 - Auto-detects book name, SAS token, and page count from the active tab
 - 32-page concurrent download with real-time ETA
@@ -30,6 +31,10 @@ minhaji-downloader/
 ├── injector.js          # Content script stub (document_start)
 ├── jspdf.umd.min.js     # Bundled jsPDF (used by Images → PDF mode)
 ├── pdf-lib.min.js       # Bundled pdf-lib (fallback DRM strip)
+├── icons/
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
 └── README.md
 ```
 
@@ -68,6 +73,19 @@ Best for books served as encrypted PDFs from Azure Blob Storage.
 5. The extension locates the source PDF, decrypts it, renders it, and saves an unlocked copy
 
 > **Note:** The extension must be active on the Minhaji tab. If it says "Asset not detected", scroll through a few pages first.
+
+### Mode 3 — Browse Library
+
+Download any book from the whole catalog without opening its viewer.
+
+1. Open the extension popup and switch to the **Browse** tab
+2. Make sure you are logged in to `minhaji.moe.gov.ae` in any tab (the extension reuses that session; it will offer to open the site if no tab exists)
+3. Pick a **Grade** (KG1 → Grade 12), optionally narrow by **Stream** (ASP / ADV / GEN) and **Subject**
+4. Choose the **Book Type** — `Student Book` or `Teacher's Guide`
+5. Hit **Load Books** — covers, page counts, and titles appear in the list
+6. Press **Download** on any card — the same Direct-PDF decrypt pipeline runs and saves an unlocked copy (teacher guides get a ` - Teachers Guide` filename suffix)
+
+Under the hood this talks to the same APIs the Minhaji SPA uses: `Descriptor/GetAll` for the filter taxonomy (grades, streams, subjects, personas), `Book/GetPublishedBooks` for the listings, and `AzureBlob/GetSasToken` for blob access.
 
 ---
 

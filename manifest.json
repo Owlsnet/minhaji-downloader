@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Minhaji PDF Downloader",
-  "version": "3.1.1",
-  "description": "Download full PDFs from minhaji.moe.gov.ae library",
-  "permissions": ["activeTab", "scripting", "downloads"],
+  "version": "3.2.0",
+  "description": "Download full PDFs from minhaji.moe.gov.ae library — viewer capture plus full catalog browsing (KG1–G12, ASP/ADV/GEN, Teacher's Guides)",
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
